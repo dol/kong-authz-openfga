@@ -1,0 +1,34 @@
+@startuml Kong Gateway OpenFGA Plugin Sequence Diagram w/o Caching
+!theme plain
+actor Client
+participant "Kong Gateway" as KONG
+participant "OpenFGA Plugin" as Plugin
+participant "OpenFGA" as OpenFGA
+database "Backend Service" as Backend
+
+Client -> KONG: API Request
+activate KONG
+
+KONG -> Plugin: Intercept Request
+activate Plugin
+
+Plugin -> Plugin: Extract Resource & Relation
+
+Plugin -> OpenFGA: Check Authorization
+activate OpenFGA
+OpenFGA --> Plugin: Authorization Decision
+deactivate OpenFGA
+
+alt is authorized
+    Plugin --> KONG: Allow Request
+    KONG -> Backend: Forward Request
+    Backend --> KONG: Response
+    KONG --> Client: API Response
+else is not authorized
+    Plugin --> KONG: Deny Request
+    KONG --> Client: 403 Forbidden
+end
+
+deactivate Plugin
+deactivate KONG
+@enduml

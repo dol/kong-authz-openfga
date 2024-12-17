@@ -1,0 +1,20 @@
+---
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: my-service
+    url: http://localhost
+    plugins:
+      - name: kong-authz-openfga
+        config:
+          host: localhost
+          store_id: some_store_id
+          tuple:
+            user: user:anne
+            relation: can_view
+            object: group:finance
+    routes:
+      - name: my-route
+        paths:
+          - /

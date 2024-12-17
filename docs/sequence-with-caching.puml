@@ -1,0 +1,40 @@
+@startuml KONG OpenFGA Plugin Sequence Diagram with Caching
+!theme plain
+actor Client
+participant "Kong Gateway" as KONG
+participant "OpenFGA Plugin" as Plugin
+database "Cache" as Cache
+participant "OpenFGA" as OpenFGA
+
+Client -> KONG: API Request
+activate KONG
+
+KONG -> Plugin: Intercept Request
+activate Plugin
+
+Plugin -> Cache: Check Cache
+activate Cache
+
+alt cache hit
+    Cache --> Plugin: Cached Decision
+else cache miss
+    Cache --> Plugin: Not Found
+    Plugin -> OpenFGA: Check Authorization
+    activate OpenFGA
+    OpenFGA --> Plugin: Authorization Decision
+    deactivate OpenFGA
+    Plugin -> Cache: Store Decision
+end
+
+alt is authorized
+    Plugin --> KONG: Allow Request
+    KONG --> Client: API Response
+else is not authorized
+    Plugin --> KONG: Deny Request
+    KONG --> Client: 403 Forbidden
+end
+
+deactivate Cache
+deactivate Plugin
+deactivate KONG
+@enduml

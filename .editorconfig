@@ -1,0 +1,27 @@
+# This file is the top-most EditorConfig file
+root = true
+
+# All Files
+[*]
+end_of_line = lf
+charset = utf-8
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Markdown Files
+[*.{md,mdx}]
+trim_trailing_whitespace = false
+
+# Batch Files
+[*.{cmd,bat}]
+end_of_line = crlf
+
+# Tab indentation (no size specified)
+[{Makefile,go.mod,go.sum,*.go,.gitmodules}]
+indent_style = tab
+
+# see https://github.com/CppCXY/EmmyLuaCodeStyle
+[*.lua]
+align_continuous_assign_statement = false

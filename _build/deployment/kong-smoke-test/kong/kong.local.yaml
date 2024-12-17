@@ -1,0 +1,25 @@
+---
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: smoke-test-upstream
+    host: 127.0.0.1
+    port: 15555
+    plugins:
+      - name: kong-authz-openfga
+        config:
+          host: kong-plugin-kong-authz-openfga-openfga
+          store_id: 01JF958AHC0F7CT35GCFN4EHP6
+          tuple:
+            user: user:anne
+            relation: reader
+            object: repo:openfga/openfga
+    routes:
+      - name: smoke.test
+        paths:
+          - /
+        protocols:
+          - https
+        snis:
+          - smoke.test

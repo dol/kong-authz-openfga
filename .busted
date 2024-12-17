@@ -1,0 +1,10 @@
+return {
+  _all = {
+    verbose = false,
+    coverage = false,
+    output = "gtest",
+  },
+  ci = {
+    ["exclude-tags"] = "postgres",
+  },
+}
