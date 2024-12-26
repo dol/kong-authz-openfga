@@ -1,10 +1,19 @@
+-- luacheck: ignore 631
+local current_folder = debug.getinfo(1).source:match("@?(.*/)"):sub(1, -2)
+
 return {
   _all = {
+    ROOT = {current_folder .. "/spec"},
     verbose = false,
-    coverage = false,
+    ["coverage-config-file"] = current_folder .. "/.luacov",
+  },
+  default = {
     output = "gtest",
   },
   ci = {
-    ["exclude-tags"] = "postgres",
+    output = "junit",
+    -- First argument is the path to the output file
+    -- https://github.com/lunarmodules/busted/blob/a144124839f027a2d0a95791936c478d047126fc/busted/outputHandlers/junit.lua#L34C34-L34C43
+    Xoutput = current_folder .. "/test-results/busted-junit.xml",
   },
 }

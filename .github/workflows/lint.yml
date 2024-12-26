@@ -1,0 +1,30 @@
+name: Lint
+
+on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lua-check:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT || 10) }}
+    name: Lua Check
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Lua Check
+      uses: Kong/public-shared-actions/code-check-actions/lua-lint@0ccacffed804d85da3f938a1b78c12831935f992 # v2.8.0
+      with:
+        additional_args: '--no-default-config --config .luacheckrc'
+        action_fail: true
+        print_results: true

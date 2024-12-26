@@ -9,6 +9,8 @@ ROCK_FILE := kong-plugin-$(KONG_PLUGIN_NAME)-$(KONG_PLUGIN_VERSION)-$(KONG_PLUGI
 
 SERVROOT_PATH := servroot
 
+TEST_RESULTS_PATH := test-results
+
 # Overwrite if you want to use `docker` with sudo
 DOCKER ?= docker
 
@@ -20,17 +22,28 @@ _docker_is_podman = $(shell $(DOCKER) --version | grep podman 2>/dev/null)
 # - set username/UID to executor
 DOCKER_USER ?= $$(id -u)
 DOCKER_USER_OPT = $(if $(_docker_is_podman),--userns keep-id,--user $(DOCKER_USER))
-DOCKER_RUN_FLAGS ?= --rm --interactive --tty $(DOCKER_USER_OPT)
+DOCKER_RUN_FLAGS_TTY ?= --tty
+DOCKER_RUN_FLAGS ?= --rm --interactive $(DOCKER_RUN_FLAGS_TTY) $(DOCKER_USER_OPT)
+
+DOCKER_MOUNT_IN_CONTAINER := /kong-plugin
 
 DOCKER_NO_CACHE :=
 
 BUILDKIT_PROGRESS :=
 
+BUSTED_RUN_PROFILE := default
 BUSTED_FILTER :=
 
-BUSTED_ARGS = --config-file /kong-plugin/.busted --run ci --filter '$(BUSTED_FILTER)'
+BUSTED_EXCLUDE_TAGS := postgres
+BUSTED_COVERAGE := false
+
+BUSTED_ARGS = --config-file $(DOCKER_MOUNT_IN_CONTAINER)/.busted --run '$(BUSTED_RUN_PROFILE)' --exclude-tags='$(BUSTED_EXCLUDE_TAGS)' --filter '$(BUSTED_FILTER)'
 ifdef BUSTED_NO_KEEP_GOING
 	BUSTED_ARGS += --no-keep-going
+endif
+
+ifneq ($(BUSTED_COVERAGE), false)
+	BUSTED_ARGS += --coverage
 endif
 
 KONG_SMOKE_TEST_DEPLOYMENT_PATH := _build/deployment/kong-smoke-test
@@ -126,10 +139,10 @@ CONTAINER_CI_KONG_SMOKE_TEST_BUILD = DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=$(BUILD
 	.
 
 CONTAINER_CI_KONG_TOOLING_RUN := MSYS_NO_PATHCONV=1 $(DOCKER) run $(DOCKER_RUN_FLAGS) \
-	-v '$(PWD):/kong-plugin' \
+	-v '$(PWD):$(DOCKER_MOUNT_IN_CONTAINER)' \
 	-e KONG_SPEC_TEST_REDIS_HOST='$(CONTAINER_CI_REDIS_NAME)' \
 	-e KONG_SPEC_TEST_LIVE_HOSTNAME='$(CONTAINER_CI_OPENFGA_NAME)' \
-	-e KONG_LICENSE_PATH=/kong-plugin/kong-license.json \
+	-e KONG_LICENSE_PATH=$(DOCKER_MOUNT_IN_CONTAINER)/kong-license.json \
 	-e KONG_DNS_ORDER='LAST,A,SRV' \
 	--network='$(CONTAINER_CI_NETWORK_NAME)' \
 	'$(CONTAINER_CI_KONG_TOOLING_IMAGE_NAME)'
@@ -148,7 +161,7 @@ CONTAINER_CI_KONG_SMOKE_TEST_RUN_SERVER := MSYS_NO_PATHCONV=1 $(DOCKER) run $(DO
 	-e KONG_VITALS=off \
 	-e KONG_NGINX_HTTP_INCLUDE=/kong/smoke-test.nginx.conf \
 	-e KONG_DECLARATIVE_CONFIG=/kong/kong.yaml \
-	-e KONG_LICENSE_PATH=/kong-plugin/kong-license.json \
+	-e KONG_LICENSE_PATH=$(DOCKER_MOUNT_IN_CONTAINER)/kong-license.json \
 	-e "KONG_ADMIN_LISTEN=0.0.0.0:8001" \
 	-e KONG_ADMIN_GUI_URL=http://localhost:8002/ \
 	--env-file .env \
@@ -178,7 +191,10 @@ $(ROCKSPEC_FILE): kong-plugin.rockspec
 
 # Rebuild the rock file every time the rockspec or the kong/**/.lua files change
 $(ROCK_FILE): container-ci-kong-tooling $(ROCKSPEC_FILE) $(PLUGIN_FILES)
-	$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd /kong-plugin; luarocks make --pack-binary-rock --deps-mode none $(ROCKSPEC_FILE))'
+	$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd $(DOCKER_MOUNT_IN_CONTAINER); luarocks make --pack-binary-rock --deps-mode none $(ROCKSPEC_FILE))'
+
+test-results:
+	mkdir -p $(TEST_RESULTS_PATH)
 
 .PHONY: tail-logs
 tail-logs:
@@ -254,15 +270,21 @@ stop-services: stop-service-redis stop-service-openfga stop-service-postgres
 
 .PHONY: lint
 lint: container-ci-kong-tooling
-	$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd /kong-plugin; luacheck .)'
+	$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd $(DOCKER_MOUNT_IN_CONTAINER); luacheck --no-default-config --config .luacheckrc .)'
 
 .PHONY: format-code
 format-code: container-ci-kong-tooling
-	$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd /kong-plugin; stylua --check . || stylua --verify .)'
+	$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd $(DOCKER_MOUNT_IN_CONTAINER); stylua --check . || stylua --verify .)'
 
 .PHONY: test-unit
-test-unit: container-ci-kong-tooling clean-servroot service-openfga
-	$(CONTAINER_CI_KONG_TOOLING_RUN) busted $(BUSTED_ARGS) /kong-plugin/spec
+test-unit: clean-test-results test-results container-ci-kong-tooling clean-servroot service-openfga
+	$(CONTAINER_CI_KONG_TOOLING_RUN) busted $(BUSTED_ARGS)
+	@if [ -f $(TEST_RESULTS_PATH)/luacov.stats.out ]; then \
+		$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd $(DOCKER_MOUNT_IN_CONTAINER)/$(TEST_RESULTS_PATH); luacov-console $(DOCKER_MOUNT_IN_CONTAINER)/kong; luacov-console -s);' ;\
+		$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd $(DOCKER_MOUNT_IN_CONTAINER)/$(TEST_RESULTS_PATH); luacov -r html; mv luacov.report.out luacov.report.html);' ;\
+		echo "Coverage report: file://$(PWD)/$(TEST_RESULTS_PATH)/luacov.report.html" ;\
+		$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c "(cd $(DOCKER_MOUNT_IN_CONTAINER)/$(TEST_RESULTS_PATH); luacov -r lcov; sed -e 's|/kong-plugin/||' -e 's/^\(DA:[0-9]\+,[0-9]\+\),[^,]*/\1/' luacov.report.out > lcov.info)" ;\
+	fi
 
 .PHONY: tooling-shell
 tooling-shell: container-ci-kong-tooling
@@ -284,8 +306,12 @@ smoke-test-run-test: container-network-ci
 .PHONY: lua-language-server-add-kong
 lua-language-server-add-kong: container-ci-kong-tooling
 	-mkdir -p .luarocks
-	$(CONTAINER_CI_KONG_TOOLING_RUN) cp -r /usr/local/share/lua/5.1/. /kong-plugin/.luarocks
-	$(CONTAINER_CI_KONG_TOOLING_RUN) cp -r /kong /kong-plugin/.luarocks
+	$(CONTAINER_CI_KONG_TOOLING_RUN) cp -rv /usr/local/share/lua/5.1/. $(DOCKER_MOUNT_IN_CONTAINER)/.luarocks
+	$(CONTAINER_CI_KONG_TOOLING_RUN) cp -rv /kong $(DOCKER_MOUNT_IN_CONTAINER)/.luarocks
+
+.PHONY: clean-test-results
+clean-test-results:
+	-$(RMDIR) test-results
 
 .PHONY: clean-servroot
 clean-servroot:
@@ -328,6 +354,7 @@ clean-container-smoke-test-network:
 	-$(DOCKER) network rm '$(CONTAINER_CI_NETWORK_NAME)'
 
 .PHONY: clean
+clean: clean-test-results
 clean: clean-rock clean-rockspec
 clean: clean-servroot
 clean: clean-container-ci-kong-tooling clean-container-ci-kong-smoke-test clean-container-smoke-test-network
