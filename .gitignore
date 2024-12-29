@@ -24,6 +24,9 @@ luacov.report.out
 /lua_modules/
 /.luarocks
 
+# LuaCov and Busted test results
+/test-results/
+
 /.docker/
 
 # Local folder for scratch files

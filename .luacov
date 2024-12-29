@@ -1,7 +1,8 @@
-include = {
-   "%/kong%-plugin%/kong%/.+$",
+return {
+  statsfile  = "/kong-plugin/test-results/luacov.stats.out",
+  reportfile = "/kong-plugin/test-results/luacov.report.out",
+  runreport  = false,
+  include    = {
+    "%/kong%-plugin%/kong%/.+$",
+  }
 }
-
-statsfile = "/kong-plugin/luacov.stats.out"
-reportfile = "/kong-plugin/luacov.report.out"
-runreport = true

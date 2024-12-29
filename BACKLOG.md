@@ -14,3 +14,4 @@
 ## Cleanup
 
 - [ ] The OpenFGA store id in the sqlite database is fixed. Make it dynamic when loading the data.
+- [ ] Test with PostgreSQL as database backend.

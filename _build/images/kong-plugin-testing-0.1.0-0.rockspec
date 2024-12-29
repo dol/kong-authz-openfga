@@ -14,6 +14,8 @@ dependencies = {
   "busted-hjtest = 0.0.5",
   "luacheck = 1.2.0",
   "luacov = 0.16.0",
+  "luacov-reporter-lcov = 0.2",
+  "luacov-console = 1.1.0",
   "lua-llthreads2 = 0.1.6",
   "http = 0.4",
 }
