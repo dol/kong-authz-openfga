@@ -6,7 +6,25 @@ local PLUGIN_NAME = "kong-authz-openfga"
 local CONFIG_BASIC = {
   host = "localhost",
   port = "8080",
+  max_attempts = 1,
+  failed_attempts_backoff_timeout = 10,
   store_id = "allowed",
+  model_id = "01HVMMBCMGZNT3SED4Z17ECXCA",
+  tuple = {
+    user = "user:anne",
+    relation = "can_view",
+    object = "document",
+  },
+  contextual_tuples = {},
+}
+
+local CONFIG_BASIC_MULTIPLE_ATTEMPTS = {
+  host = "localhost",
+  port = "8080",
+  max_attempts = 3,
+  failed_attempts_backoff_timeout = 10,
+  store_id = "allowed",
+  model_id = "01HVMMBCMGZNT3SED4Z17ECXCA",
   tuple = {
     user = "user:anne",
     relation = "can_view",
@@ -18,7 +36,10 @@ local CONFIG_BASIC = {
 local CONFIG_BASIC_CONTEXTUAL = {
   host = "localhost",
   port = "8080",
+  max_attempts = 1,
+  failed_attempts_backoff_timeout = 10,
   store_id = "allowed",
+  model_id = "01HVMMBCMGZNT3SED4Z17ECXCA",
   tuple = {
     user = "user:anne",
     relation = "can_view",
@@ -36,31 +57,60 @@ local CONFIG_BASIC_CONTEXTUAL = {
 local CONFIG_SANDBOX = {
   host = "localhost",
   port = "8080",
+  max_attempts = 1,
+  failed_attempts_backoff_timeout = 10,
   store_id = "allowed",
+  model_id = "01HVMMBCMGZNT3SED4Z17ECXCA",
   tuple = {
     user_by_lua = "return 'user:anne'",
-    relation = "can_view",
-    object = "document",
+    relation_by_lua = "return 'can_view'",
+    object_by_lua = "return 'document'",
   },
   contextual_tuples = {
     {
-      user = "organization:acme#member",
-      relation = "ip_based_access_policy",
+      user_by_lua = "return 'organization:acme#member'",
+      relation_by_lua = "return 'ip_based_access_policy'",
       object_by_lua = "return kong.client.get_ip()",
     },
   },
 }
 
+local MOCK_RESPONSES = {
+  invalid = {
+    status = 200,
+    body = "invalid json",
+  },
+  allow = {
+    status = 200,
+    body = [[{"allowed": true}]],
+  },
+  deny = {
+    status = 200,
+    body = [[{"allowed": false}]],
+  },
+  server_error = {
+    status = 400,
+    body = [[{"code": "validation_error", "message": "Generic validation error"}]],
+  },
+  retry = {
+    status = 400,
+    body = [[{"code": "retry_mock", "message": "Retry mock"}]],
+  },
+}
+
 local CONFIGS = {
   basic = CONFIG_BASIC,
+  basic_multiple_attempts = CONFIG_BASIC_MULTIPLE_ATTEMPTS,
   basic_contextual = CONFIG_BASIC_CONTEXTUAL,
   sandbox = CONFIG_SANDBOX,
 }
 
 describe(PLUGIN_NAME .. ": (unit)", function()
   local plugin
-  local request_body, exit_status, exit_body, log_lines
-  local openfga_mock_response
+  local mock_request_uri_call_count = 0
+  local max_attempts = 0
+
+  local response, request_body, exit_status, exit_body, log_lines
 
   local log_fn = function(...)
     table.insert(log_lines, { ... })
@@ -73,7 +123,12 @@ describe(PLUGIN_NAME .. ": (unit)", function()
         untrusted_lua = "sandbox",
       },
       log = {
+        alert = log_fn,
+        crit = log_fn,
         err = log_fn,
+        warn = log_fn,
+        notice = log_fn,
+        info = log_fn,
         debug = log_fn,
       },
       response = {
@@ -97,10 +152,12 @@ describe(PLUGIN_NAME .. ": (unit)", function()
         set_timeout = function() end,
         request_uri = function(_, _, params)
           request_body = params.body
-          return {
-            status = 200,
-            body = openfga_mock_response,
-          }
+          mock_request_uri_call_count = mock_request_uri_call_count + 1
+          if mock_request_uri_call_count < max_attempts then
+            return MOCK_RESPONSES.retry
+          else
+            return response
+          end
         end,
       }
     end
@@ -113,7 +170,9 @@ describe(PLUGIN_NAME .. ": (unit)", function()
     describe("[#" .. mode .. "]", function()
       -- Clean the state between each test
       before_each(function()
-        openfga_mock_response = ""
+        mock_request_uri_call_count = 0
+        max_attempts = config.max_attempts
+        response = nil
         request_body = nil
         exit_status = nil
         exit_body = nil
@@ -129,19 +188,20 @@ describe(PLUGIN_NAME .. ": (unit)", function()
       end)
 
       it("invalid mock response", function()
-        openfga_mock_response = "invalid json"
+        response = MOCK_RESPONSES.invalid
         plugin:access(config)
         assert.equal(500, exit_status)
         assert.equal("An unexpected error occurred", exit_body)
       end)
 
       it("allow", function()
-        openfga_mock_response = [[{"allowed": true}]]
+        response = MOCK_RESPONSES.allow
         plugin:access(config)
         assert.is_nil(exit_status)
         assert.is_nil(exit_body)
         local request_body_json = cjson.decode(request_body)
 
+        assert.equal("01HVMMBCMGZNT3SED4Z17ECXCA", request_body_json.authorization_model_id)
         assert.equal("user:anne", request_body_json.tuple_key.user)
         assert.equal("can_view", request_body_json.tuple_key.relation)
         assert.equal("document", request_body_json.tuple_key.object)
@@ -153,10 +213,17 @@ describe(PLUGIN_NAME .. ": (unit)", function()
       end)
 
       it("deny", function()
-        openfga_mock_response = [[{"allowed": false}]]
+        response = MOCK_RESPONSES.deny
         plugin:access(config)
         assert.equal(403, exit_status)
         assert.equal("Forbidden", exit_body)
+      end)
+
+      it("server error", function()
+        response = MOCK_RESPONSES.server_error
+        plugin:access(config)
+        assert.equal(500, exit_status)
+        assert.equal("An unexpected error occurred", exit_body)
       end)
     end)
   end

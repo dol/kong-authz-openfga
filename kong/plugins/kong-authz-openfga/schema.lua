@@ -46,6 +46,8 @@ local tuple_key = {
 ---@field https_verify boolean
 ---@field timeout number
 ---@field keepalive number
+---@field max_attempts integer
+---@field failed_attempts_backoff_timeout integer
 ---@field store_id string
 ---@field model_id string
 ---@field api_token string
@@ -71,6 +73,8 @@ return {
           { https_verify = { required = true, type = "boolean", default = false } },
           { timeout = { type = "number", default = 10000 } },
           { keepalive = { type = "number", default = 60000 } },
+          { max_attempts = { type = "integer", default = 3, gt = 0 } },
+          { failed_attempts_backoff_timeout = { type = "integer", default = 1000, gt = 0 } },
           { store_id = { required = true, type = "string" } },
           {
             model_id = {
