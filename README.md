@@ -50,6 +50,8 @@ Below is the example configuration one might use in `declarative_config`:
     port: 1234
     https: true
     https_verify: true
+    max_attempts: 3
+    failed_attempts_backoff_timeout: 1000
     timeout: 10000
     keepalive: 60000
     store_id: "your_store_id"
@@ -72,24 +74,26 @@ Below is the example configuration one might use in `declarative_config`:
 
 ## Configuration
 
-| Property                                                     | Default value | Description                                                                                                                                                                          |
-| ------------------------------------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `host`<br/>_required_<br/><br/>**Type:** hostname (string)   | -             | Hostname of the OpenFGA server                                                                                                                                                       |
-| `port`<br/>_required_<br/><br/>**Type:** port (number)       | 8080          | HTTP API port of OpenFGA                                                                                                                                                             |
-| `https`<br/>_optional_<br/><br/>**Type:** boolean            | false         | Use HTTPS to connect to OpenFGA                                                                                                                                                      |
-| `https_verify`<br/>_optional_<br/><br/>**Type:** boolean     | false         | Verify HTTPS certificate                                                                                                                                                             |
-| `timeout`<br/>_optional_<br/><br/>**Type:** number           | 10000         | The total timeout time in milliseconds for a request and response cycle.                                                                                                             |
-| `keepalive`<br/>_optional_<br/><br/>**Type:** number         | 60000         | The maximal idle timeout in milliseconds for the current connection. See [tcpsock:setkeepalive](https://github.com/openresty/lua-nginx-module#tcpsocksetkeepalive) for more details. |
-| `store_id`<br/>_required_<br/><br/>**Type:** string          | -             | The store ID in OpenFGA                                                                                                                                                              |
-| `model_id`<br/>_optional_<br/><br/>**Type:** string          | -             | Optional model ID (version). Latest is used if this is empty                                                                                                                         |
-| `api_token`<br/>_optional_<br/><br/>**Type:** string         | -             | Optional API token                                                                                                                                                                   |
-| `api_token_issuer`<br/>_optional_<br/><br/>**Type:** string  | -             | API token issuer                                                                                                                                                                     |
-| `api_audience`<br/>_optional_<br/><br/>**Type:** string      | -             | API audience                                                                                                                                                                         |
-| `api_client_id`<br/>_optional_<br/><br/>**Type:** string     | -             | API client ID                                                                                                                                                                        |
-| `api_client_secret`<br/>_optional_<br/><br/>**Type:** string | -             | API client secret                                                                                                                                                                    |
-| `api_token_cache`<br/>_optional_<br/><br/>**Type:** number   | 600           | API token cache duration in seconds                                                                                                                                                  |
-| `tuple`<br/>_required_<br/><br/>**Type:** record             | -             | Tuple key for authorization                                                                                                                                                          |
-| `contextual_tuples`<br/>_optional_<br/><br/>**Type:** set    | {}            | Set of contextual tuples for authorization                                                                                                                                           |
+| Property                                                                    | Default value | Description                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `host`<br/>_required_<br/><br/>**Type:** hostname (string)                  | -             | Hostname of the OpenFGA server                                                                                                                                                                                           |
+| `port`<br/>_required_<br/><br/>**Type:** port (number)                      | 8080          | HTTP API port of OpenFGA                                                                                                                                                                                                 |
+| `https`<br/>_optional_<br/><br/>**Type:** boolean                           | false         | Use HTTPS to connect to OpenFGA                                                                                                                                                                                          |
+| `https_verify`<br/>_optional_<br/><br/>**Type:** boolean                    | false         | Verify HTTPS certificate                                                                                                                                                                                                 |
+| `max_attempts`<br/>_optional_<br/><br/>**Type:** integer                    | 3             | The maximum number of attempts to make when querying OpenFGA. This is useful for handling transient errors and retries.                                                                                                  |
+| `failed_attempts_backoff_timeout`<br/>_optional_<br/><br/>**Type:** integer | 1000          | The backoff timeout in milliseconds between retry attempts when querying OpenFGA. This helps to avoid overwhelming the server with rapid retries. Formula: `failed_attempts_backoff_timeout * 2 ^ (attempts - 1) / 1000` |
+| `timeout`<br/>_optional_<br/><br/>**Type:** number                          | 10000         | The total timeout time in milliseconds for a request and response cycle.                                                                                                                                                 |
+| `keepalive`<br/>_optional_<br/><br/>**Type:** number                        | 60000         | The maximal idle timeout in milliseconds for the current connection. See [tcpsock:setkeepalive](https://github.com/openresty/lua-nginx-module#tcpsocksetkeepalive) for more details.                                     |
+| `store_id`<br/>_required_<br/><br/>**Type:** string                         | -             | The store ID in OpenFGA                                                                                                                                                                                                  |
+| `model_id`<br/>_optional_<br/><br/>**Type:** string                         | -             | Optional model ID (version). Latest is used if this is empty                                                                                                                                                             |
+| `api_token`<br/>_optional_<br/><br/>**Type:** string                        | -             | Optional API token                                                                                                                                                                                                       |
+| `api_token_issuer`<br/>_optional_<br/><br/>**Type:** string                 | -             | API token issuer                                                                                                                                                                                                         |
+| `api_audience`<br/>_optional_<br/><br/>**Type:** string                     | -             | API audience                                                                                                                                                                                                             |
+| `api_client_id`<br/>_optional_<br/><br/>**Type:** string                    | -             | API client ID                                                                                                                                                                                                            |
+| `api_client_secret`<br/>_optional_<br/><br/>**Type:** string                | -             | API client secret                                                                                                                                                                                                        |
+| `api_token_cache`<br/>_optional_<br/><br/>**Type:** number                  | 600           | API token cache duration in seconds                                                                                                                                                                                      |
+| `tuple`<br/>_required_<br/><br/>**Type:** record                            | -             | Tuple key for authorization                                                                                                                                                                                              |
+| `contextual_tuples`<br/>_optional_<br/><br/>**Type:** set                   | {}            | Set of contextual tuples for authorization                                                                                                                                                                               |
 
 ## Plugin version
 
@@ -148,6 +152,36 @@ make lint
 ```sh
 make test-unit
 ```
+
+| Runtime configuration | Description                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| BUSTED_NO_KEEP_GOING  | When set to `true`, `busted` will stop running tests after the first failure. Default is `false`. |
+| BUSTED_COVERAGE       | When set to `true`, `busted` will generate a code coverage report. Default is `false`.            |
+| BUSTED_EMMY_DEBUGGER  | When set to `true`, enables the EMMY Lua debugger for `busted` tests. Default is `false`.         |
+
+#### Run test with EMMY Debugger
+
+##### Prerequisites
+
+- Install the [EmmyLua](https://marketplace.visualstudio.com/items?itemName=tangzx.emmylua) extension in VS Code
+
+##### Usage
+
+1. Start your tests with debugging enabled:
+
+   `make test-unit BUSTED_EMMY_DEBUGGER=true`
+
+2. In VS Code:
+   - Set breakpoints in your Lua code
+   - Start the debugger using F5 or the Debug panel
+   - The debugger will attach to the running tests
+3. Debug features available:
+   - Step through code
+   - Inspect variables
+   - View call stack
+   - Set conditional breakpoints
+
+The debugger will automatically map source files between your local workspace and the container environment using the configured source roots.
 
 ### Pack the plugin into a .rock
 

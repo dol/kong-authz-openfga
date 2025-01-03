@@ -31,19 +31,29 @@ DOCKER_NO_CACHE :=
 
 BUILDKIT_PROGRESS :=
 
+# Busted runtime profile
 BUSTED_RUN_PROFILE := default
 BUSTED_FILTER :=
 
+# Busted exclude tags
 BUSTED_EXCLUDE_TAGS := postgres
+BUSTED_NO_KEEP_GOING := false
 BUSTED_COVERAGE := false
+BUSTED_EMMY_DEBUGGER := false
+
+BUSTED_EMMY_DEBUGGER_ENABLED_ARGS =
 
 BUSTED_ARGS = --config-file $(DOCKER_MOUNT_IN_CONTAINER)/.busted --run '$(BUSTED_RUN_PROFILE)' --exclude-tags='$(BUSTED_EXCLUDE_TAGS)' --filter '$(BUSTED_FILTER)'
-ifdef BUSTED_NO_KEEP_GOING
+ifneq ($(BUSTED_NO_KEEP_GOING), false)
 	BUSTED_ARGS += --no-keep-going
 endif
 
 ifneq ($(BUSTED_COVERAGE), false)
 	BUSTED_ARGS += --coverage
+endif
+
+ifneq ($(BUSTED_EMMY_DEBUGGER), false)
+	BUSTED_EMMY_DEBUGGER_ENABLED_ARGS = -e BUSTED_EMMY_DEBUGGER='/usr/local/lib/lua/5.1/emmy_core.so'
 endif
 
 KONG_SMOKE_TEST_DEPLOYMENT_PATH := _build/deployment/kong-smoke-test
@@ -82,10 +92,10 @@ CONTAINER_CI_OPENFGA_MIGRATION := $(DOCKER) run $(DOCKER_RUN_FLAGS) \
 	migrate --verbose
 
 CONTAINER_CI_OPENFGA_RUN := $(DOCKER) run -d $(DOCKER_RUN_FLAGS) \
-	-p '8080:8080' \
-	-p '8081:8081' \
-	-p '3000:3000' \
-	-p '2112:2112' \
+	-p 8080:8080 \
+	-p 8081:8081 \
+	-p 3000:3000 \
+	-p 2112:2112 \
 	-e OPENFGA_DATASTORE_ENGINE=sqlite \
 	-e OPENFGA_DATASTORE_URI=file:/data/openfga.sqlite \
 	-e OPENFGA_DATASTORE_MAX_OPEN_CONNS=100 \
@@ -124,6 +134,7 @@ CONTAINER_CI_KONG_TOOLING_BUILD = DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=$(BUILDKIT
 	--build-arg PONGO_KONG_VERSION='$(PONGO_KONG_VERSION)' \
 	--build-arg PONGO_ARCHIVE='$(PONGO_ARCHIVE)' \
 	--build-arg STYLUA_VERSION='$(STYLUA_VERSION)' \
+	--build-arg EMMY_LUA_DEBUGGER_VERSION='$(EMMY_LUA_DEBUGGER_VERSION)' \
 	.
 
 CONTAINER_CI_KONG_SMOKE_TEST_BUILD = DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=$(BUILDKIT_PROGRESS) $(DOCKER) build \
@@ -139,12 +150,20 @@ CONTAINER_CI_KONG_SMOKE_TEST_BUILD = DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=$(BUILD
 	.
 
 CONTAINER_CI_KONG_TOOLING_RUN := MSYS_NO_PATHCONV=1 $(DOCKER) run $(DOCKER_RUN_FLAGS) \
-	-v '$(PWD):$(DOCKER_MOUNT_IN_CONTAINER)' \
+	-p 9966:9966 \
 	-e KONG_SPEC_TEST_REDIS_HOST='$(CONTAINER_CI_REDIS_NAME)' \
 	-e KONG_SPEC_TEST_LIVE_HOSTNAME='$(CONTAINER_CI_OPENFGA_NAME)' \
 	-e KONG_LICENSE_PATH=$(DOCKER_MOUNT_IN_CONTAINER)/kong-license.json \
 	-e KONG_DNS_ORDER='LAST,A,SRV' \
+	-e BUSTED_EMMY_DEBUGGER_HOST='0.0.0.0' \
+	-e BUSTED_EMMY_DEBUGGER_PORT='9966' \
+	-e BUSTED_EMMY_DEBUGGER_SOURCE_PATH='/usr/local/share/lua/5.1/kong/plugins:/usr/local/share/lua/5.1/kong/enterprise_edition' \
+	-e BUSTED_EMMY_DEBUGGER_SOURCE_PATH_MAPPING='$(DOCKER_MOUNT_IN_CONTAINER);$(PWD):/usr/local/share/lua/5.1;$(PWD)/.luarocks:/usr/local/openresty/lualib;$(PWD)/.luarocks' \
+	$(BUSTED_EMMY_DEBUGGER_ENABLED_ARGS) \
 	--network='$(CONTAINER_CI_NETWORK_NAME)' \
+	-v '$(PWD):$(DOCKER_MOUNT_IN_CONTAINER)' \
+	-v '$(PWD)/_build/debugger/emmy_debugger.lua:/usr/local/share/lua/5.1/kong/tools/emmy_debugger.lua' \
+	-v '$(PWD)/_build/debugger/busted:/kong/bin/busted' \
 	'$(CONTAINER_CI_KONG_TOOLING_IMAGE_NAME)'
 
 CONTAINER_CI_KONG_SMOKE_TEST_RUN_SERVER_NAME = kong-plugin-$(KONG_PLUGIN_NAME)-smoke-test
@@ -308,6 +327,7 @@ lua-language-server-add-kong: container-ci-kong-tooling
 	-mkdir -p .luarocks
 	$(CONTAINER_CI_KONG_TOOLING_RUN) cp -rv /usr/local/share/lua/5.1/. $(DOCKER_MOUNT_IN_CONTAINER)/.luarocks
 	$(CONTAINER_CI_KONG_TOOLING_RUN) cp -rv /kong $(DOCKER_MOUNT_IN_CONTAINER)/.luarocks
+	$(CONTAINER_CI_KONG_TOOLING_RUN) cp -rv /usr/local/openresty/lualib/. $(DOCKER_MOUNT_IN_CONTAINER)/.luarocks
 
 .PHONY: clean-test-results
 clean-test-results:

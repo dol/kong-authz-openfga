@@ -46,6 +46,8 @@ describe(PLUGIN_NAME .. ": (#schema)", function()
       port = 1234,
       https = true,
       https_verify = true,
+      max_attempts = 3,
+      failed_attempts_backoff_timeout = 1000,
       store_id = "store_id",
       model_id = "model_id",
       api_token = "api_token",
