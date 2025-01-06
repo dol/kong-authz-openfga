@@ -34,3 +34,27 @@ jobs:
           artifact-name: code-coverage-report
           github-token: ${{ secrets.GITHUB_TOKEN }}
           update-comment: true
+  smoke-tests:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT || 10) }}
+    name: Smoke Tests
+
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Create .env file
+        run: |
+          cp .env.tpl .env
+      - name: Run the smoke test server
+        run: |
+          make smoke-test-run-server DOCKER_RUN_FLAGS_TTY='-d'
+      - name: Wait for service to be ready
+        run: |
+          # Wait until kong is ready
+          timeout 60s bash -c 'until docker exec kong-plugin-kong-authz-openfga-smoke-test curl -i http://localhost:8007/status/ready; do sleep 5; done'
+      - name: Run smoke tests
+        run: |
+          make smoke-test-run-test DOCKER_RUN_FLAGS_TTY=''

@@ -110,7 +110,7 @@ describe(PLUGIN_NAME .. ": (unit)", function()
   local mock_request_uri_call_count = 0
   local max_attempts = 0
 
-  local response, request_body, exit_status, exit_body, log_lines
+  local response, response_error, request_body, exit_status, exit_body, log_lines
 
   local log_fn = function(...)
     table.insert(log_lines, { ... })
@@ -155,8 +155,10 @@ describe(PLUGIN_NAME .. ": (unit)", function()
           mock_request_uri_call_count = mock_request_uri_call_count + 1
           if mock_request_uri_call_count < max_attempts then
             return MOCK_RESPONSES.retry
-          else
+          elseif response then
             return response
+          elseif response_error then
+            return nil, response_error
           end
         end,
       }
@@ -173,6 +175,7 @@ describe(PLUGIN_NAME .. ": (unit)", function()
         mock_request_uri_call_count = 0
         max_attempts = config.max_attempts
         response = nil
+        response_error = nil
         request_body = nil
         exit_status = nil
         exit_body = nil
@@ -221,6 +224,13 @@ describe(PLUGIN_NAME .. ": (unit)", function()
 
       it("server error", function()
         response = MOCK_RESPONSES.server_error
+        plugin:access(config)
+        assert.equal(500, exit_status)
+        assert.equal("An unexpected error occurred", exit_body)
+      end)
+
+      it("connection error", function()
+        response_error = "Connection refused"
         plugin:access(config)
         assert.equal(500, exit_status)
         assert.equal("An unexpected error occurred", exit_body)

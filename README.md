@@ -286,21 +286,22 @@ The project bundles a mock server for OpenFGA.
 
 - <https://marketplace.visualstudio.com/items?itemName=sumneko.lua>
 - <https://marketplace.visualstudio.com/items?itemName=dwenegar.vscode-luacheck>
+- <https://marketplace.visualstudio.com/items?itemName=tangzx.emmylua>
 
 # Release a new version
 
 1. Checkout the main branch
    1. `git checkout main`
 2. Update the version number in [plugin.properties](plugin.properties)
-3. Update the version number in [kong-plugin.rockspec](kong-plugin.rockspec)
-4. Update the version number in [README.md](README.md)
+3. Update the version number in [README.md](README.md)
+4. Generate the release rockspec file
+   1. `make release-rockspec`
 5. Update the version number in [kong/plugins/kong-authz-openfga/handler.lua](kong/plugins/kong-authz-openfga/handler.lua)
 6. Add a new section to [CHANGELOG.md](CHANGELOG.md) with the release highlights
 7. Commit the changes, create a tag and push changes and tag to the remote repository
-   1. `git add plugin.properties kong-plugin.rockspec README.md kong/plugins/*/handler.lua CHANGELOG.md`
+   1. `git add plugin.properties *.rockspec README.md kong/plugins/*/handler.lua CHANGELOG.md`
    2. `git commit -m "Release x.y.z-r"`
    3. `git tag x.y.z-r`
    4. `git push`
    5. `git push --tags`
-8. @TODO: Add step to publish the \*.rock file to LuaRocks
-9. @TODO: Add step to perform a release in GitHub
+8. @TODO: Add step to perform a release in GitHub

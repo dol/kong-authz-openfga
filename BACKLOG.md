@@ -9,9 +9,9 @@
 
 - [ ] Add live tests to the OpenFGA server addition to the mock server.
 - [ ] Add an example that uses Consumer in conjunction with the Basic Authentication plugin.
-- [ ] Add build, test, and deploy pipeline (GitHub Actions) to the project
-- [ ] Add GitHub action to perform a smoke test
-- [ ] Add GitHub action to publish .rock when a version was tagged. Use LUAROCKS_API_KEY secret.
+- [x] Add build, test, and deploy pipeline (GitHub Actions) to the project
+- [x] Add GitHub action to perform a smoke test
+- [x] Add GitHub action to publish .rock when a version was tagged. Use LUAROCKS_API_KEY secret.
 
 ## Cleanup
 

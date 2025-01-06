@@ -57,7 +57,7 @@ local function make_fga_request(httpc, url, fga_request, conf)
     return false, "Failed to decode FGA response body: " .. json_err
   end
 
-  if (response.status == 200 and body.allowed ~= nil and type(body.allowed) == "boolean") then
+  if response.status == 200 and body.allowed ~= nil and type(body.allowed) == "boolean" then
     return body.allowed, nil
   end
 
@@ -117,7 +117,7 @@ function _M.execute(conf)
     -- Backoff timeout only after the first attempt was not successful
     if attempts > 1 then
       local backoff_timeout = (conf.failed_attempts_backoff_timeout * 2 ^ (attempts - 1)) / 1000
-      kong.log.info("Querying OpenFGA. Backoff timeout: ", backoff_timeout, " seconds, ",attempt_info)
+      kong.log.info("Querying OpenFGA. Backoff timeout: ", backoff_timeout, " seconds, ", attempt_info)
       ngx.sleep(backoff_timeout)
     else
       kong.log.info("Querying OpenFGA: ", attempt_info)
@@ -135,7 +135,7 @@ function _M.execute(conf)
 
     -- Log the error and retry the request
     kong.log.err(raise_err, ", ", attempt_info)
-  until (attempts >= conf.max_attempts)
+  until attempts >= conf.max_attempts
 
   return unexpected_error()
 end

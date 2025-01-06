@@ -4,8 +4,9 @@ PLUGIN_FILES = $(shell find kong -type f -name '*.lua')
 
 KONG_IMAGE_TAG := $(KONG_VERSION)-rhel@sha256:$(KONG_IMAGE_HASH)
 
-ROCKSPEC_FILE := kong-plugin-$(KONG_PLUGIN_NAME)-$(KONG_PLUGIN_VERSION)-$(KONG_PLUGIN_REVISION).rockspec
-ROCK_FILE := kong-plugin-$(KONG_PLUGIN_NAME)-$(KONG_PLUGIN_VERSION)-$(KONG_PLUGIN_REVISION).all.rock
+ROCKSPEC_DEV_FILE := kong-plugin-$(KONG_PLUGIN_NAME)-dev-0.rockspec
+ROCKSPEC_RELEASE_FILE := kong-plugin-$(KONG_PLUGIN_NAME)-$(KONG_PLUGIN_VERSION)-$(KONG_PLUGIN_REVISION).rockspec
+ROCK_RELEASE_FILE := kong-plugin-$(KONG_PLUGIN_NAME)-$(KONG_PLUGIN_VERSION)-$(KONG_PLUGIN_REVISION).all.rock
 
 SERVROOT_PATH := servroot
 
@@ -129,8 +130,6 @@ CONTAINER_CI_KONG_TOOLING_BUILD = DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=$(BUILDKIT
 	--build-arg KONG_IMAGE_TAG='$(KONG_IMAGE_TAG)' \
 	--build-arg KONG_TARGET_VERSION='$(KONG_VERSION)' \
 	--build-arg KONG_PLUGIN_NAME='$(KONG_PLUGIN_NAME)' \
-	--build-arg KONG_PLUGIN_VERSION='$(KONG_PLUGIN_VERSION)' \
-	--build-arg KONG_PLUGIN_REVISION='$(KONG_PLUGIN_REVISION)' \
 	--build-arg PONGO_KONG_VERSION='$(PONGO_KONG_VERSION)' \
 	--build-arg PONGO_ARCHIVE='$(PONGO_ARCHIVE)' \
 	--build-arg STYLUA_VERSION='$(STYLUA_VERSION)' \
@@ -144,10 +143,12 @@ CONTAINER_CI_KONG_SMOKE_TEST_BUILD = DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=$(BUILD
 	--build-arg KONG_IMAGE_NAME='$(KONG_IMAGE_NAME)' \
 	--build-arg KONG_IMAGE_TAG='$(KONG_IMAGE_TAG)' \
 	--build-arg KONG_PLUGIN_NAME='$(KONG_PLUGIN_NAME)' \
-	--build-arg KONG_PLUGIN_VERSION='$(KONG_PLUGIN_VERSION)' \
-	--build-arg KONG_PLUGIN_REVISION='$(KONG_PLUGIN_REVISION)' \
-	--build-arg KONG_PLUGIN_ROCK_FILE='$(ROCK_FILE)' \
+	--build-arg KONG_PLUGIN_ROCKSPEC_FILE='$(ROCKSPEC_DEV_FILE)' \
 	.
+
+CONTAINER_CI_KONG_RUN := MSYS_NO_PATHCONV=1 $(DOCKER) run $(DOCKER_RUN_FLAGS) \
+	-v '$(PWD):$(DOCKER_MOUNT_IN_CONTAINER)' \
+	'$(KONG_IMAGE_NAME):$(KONG_IMAGE_TAG)'
 
 CONTAINER_CI_KONG_TOOLING_RUN := MSYS_NO_PATHCONV=1 $(DOCKER) run $(DOCKER_RUN_FLAGS) \
 	-p 9966:9966 \
@@ -205,12 +206,24 @@ TAG ?=
 .PHONY: all
 all: test
 
-$(ROCKSPEC_FILE): kong-plugin.rockspec
-	cp kong-plugin.rockspec $(ROCKSPEC_FILE)
+$(ROCKSPEC_DEV_FILE): kong-plugin.rockspec
+	cp kong-plugin.rockspec $(ROCKSPEC_DEV_FILE)
+	$(CONTAINER_CI_KONG_RUN) sh -c '(cd $(DOCKER_MOUNT_IN_CONTAINER); luarocks new_version $(ROCKSPEC_DEV_FILE) --tag=dev-0 --dir .)'
+
+$(ROCKSPEC_RELEASE_FILE): $(ROCKSPEC_DEV_FILE)
+	$(CONTAINER_CI_KONG_RUN) sh -c '(cd $(DOCKER_MOUNT_IN_CONTAINER); luarocks new_version $(ROCKSPEC_DEV_FILE) --tag=v$(KONG_PLUGIN_VERSION)-$(KONG_PLUGIN_REVISION) --dir .)'
+
+.PHONY: release-rockspec
+release-rockspec: $(ROCKSPEC_RELEASE_FILE)
+
+.PHONY: release-rockspec
+release-info:
+	@echo "VERSION=v$(KONG_PLUGIN_VERSION)-$(KONG_PLUGIN_REVISION)"
+	@echo "ROCKSPEC_RELEASE_FILE=$(ROCKSPEC_RELEASE_FILE)"
 
 # Rebuild the rock file every time the rockspec or the kong/**/.lua files change
-$(ROCK_FILE): container-ci-kong-tooling $(ROCKSPEC_FILE) $(PLUGIN_FILES)
-	$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd $(DOCKER_MOUNT_IN_CONTAINER); luarocks make --pack-binary-rock --deps-mode none $(ROCKSPEC_FILE))'
+$(ROCK_RELEASE_FILE): container-ci-kong-tooling $(ROCKSPEC_RELEASE_FILE) $(PLUGIN_FILES)
+	$(CONTAINER_CI_KONG_TOOLING_RUN) sh -c '(cd $(DOCKER_MOUNT_IN_CONTAINER); luarocks make --pack-binary-rock --deps-mode none $(ROCKSPEC_RELEASE_FILE))'
 
 test-results:
 	mkdir -p $(TEST_RESULTS_PATH)
@@ -223,10 +236,10 @@ tail-logs:
 test: lint test-unit
 
 .PHONY: pack
-pack: $(ROCK_FILE)
+pack: $(ROCK_RELEASE_FILE)
 
 .PHONY: container-ci-kong-tooling
-container-ci-kong-tooling: $(ROCKSPEC_FILE) container-network-ci
+container-ci-kong-tooling: $(ROCKSPEC_DEV_FILE) container-network-ci
 	$(CONTAINER_CI_KONG_TOOLING_BUILD)
 
 .PHONY: container-ci-kong-tooling-debug
@@ -235,7 +248,7 @@ container-ci-kong-tooling-debug: DOCKER_NO_CACHE = '--no-cache'
 container-ci-kong-tooling-debug: container-ci-kong-tooling
 
 .PHONY: container-ci-kong-smoke-test
-container-ci-kong-smoke-test: $(ROCK_FILE) container-network-ci
+container-ci-kong-smoke-test: $(ROCKSPEC_DEV_FILE) container-network-ci
 	$(CONTAINER_CI_KONG_SMOKE_TEST_BUILD)
 
 .PHONY: container-ci-kong-smoke-test-debug
@@ -340,6 +353,7 @@ clean-servroot:
 .PHONY: clean-rockspec
 clean-rockspec:
 	-$(RMDIR) kong-plugin-*.rockspec
+#-git ls-files --others --exclude-standard --ignored -- | grep 'kong-plugin-.*\.rockspec' | xargs $(RM) || true
 
 .PHONY: clean-rock
 clean-rock:

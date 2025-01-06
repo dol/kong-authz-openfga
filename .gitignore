@@ -9,7 +9,7 @@ luacov.stats.out
 # exclude LuaCov report
 luacov.report.out
 # Exclude all rockspec files except the main one
-/*.rockspec
+/kong-plugin-*-dev-*.rockspec
 !/kong-plugin.rockspec
 # curl netrc
 /.netrc
