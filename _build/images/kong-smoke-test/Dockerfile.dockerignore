@@ -1,0 +1,8 @@
+# Ignore all files
+*
+
+# Exclude the following files
+!/kong/
+!/README.md
+!/LICENSE
+!/kong-plugin-*-dev-0.rockspec

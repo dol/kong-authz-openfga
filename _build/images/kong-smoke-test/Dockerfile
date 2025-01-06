@@ -5,20 +5,22 @@ FROM ${KONG_IMAGE_NAME}:${KONG_IMAGE_TAG} AS builder
 USER root
 
 ARG KONG_PLUGIN_NAME
-ARG KONG_PLUGIN_VERSION
-ARG KONG_PLUGIN_REVISION
-ARG KONG_PLUGIN_ROCK_FILE
+ARG KONG_PLUGIN_ROCKSPEC_FILE
 
 RUN dnf install -y gcc m4 --setopt=install_weak_deps=False \
   && dnf clean all
 
-COPY ${KONG_PLUGIN_ROCK_FILE} /${KONG_PLUGIN_ROCK_FILE}
+WORKDIR /plugin
+COPY . .
 
-RUN luarocks install /${KONG_PLUGIN_ROCK_FILE}
+# Install from .rockspec
+RUN find && luarocks make ${KONG_PLUGIN_ROCKSPEC_FILE}
 
 FROM ${KONG_IMAGE_NAME}:${KONG_IMAGE_TAG}
 
 ENV KONG_LOG_LEVEL=debug
+
+ENV KONG_NGINX_WORKER_PROCESSES=1
 
 # Add the Lua files (.lua)
 COPY --from=builder /usr/local/share/lua/5.1 /usr/local/share/lua/5.1

@@ -2,8 +2,8 @@ local plugin_name = "kong-authz-openfga"
 local package_name = "kong-plugin-" .. plugin_name
 local package_namespace = "kong.plugins." .. plugin_name
 local package_path = "kong/plugins/" .. plugin_name
-local package_version = "0.1.0"
-local rockspec_revision = "1"
+local package_version = "dev"
+local rockspec_revision = "0"
 
 package = package_name
 version = package_version .. "-" .. rockspec_revision
@@ -15,10 +15,11 @@ source = {
 description = {
   summary = "Kong plugin for kong-authz-openfga integration",
   homepage = "https://github.com/dol/kong-authz-openfga",
-  license = "proprietary",
+  license = "MIT",
 }
 
 dependencies = {
+  "lua ~> 5.1",
 }
 
 build = {
