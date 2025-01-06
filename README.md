@@ -4,10 +4,10 @@ The goal of this plugin is to integrate Kong with OpenFGA for fine-grained autho
 
 ## Installation
 
-Install the plugin using `luarocks`. @TODO: The package is not yet hosted on LuaRocks or as an release asset on GitHub.
+Install the plugin using `luarocks`.
 
 ```sh
-luarocks install kong-plugin-kong-authz-openfga-0.1.0-1.all.rock
+luarocks install kong-plugin-kong-authz-openfga
 ```
 
 ## Enable it in Kong
@@ -254,7 +254,7 @@ make clean
 
 ## Run CI lint, unit and integration tests
 
-@TODO: Add build, test, and deploy pipeline (GitHub Actions) to the project
+The project integrates with GitHub Actions for CI. The CI pipeline runs the lint, unit and integration tests.
 
 ## Test against a different Kong version
 
@@ -280,7 +280,7 @@ The project bundles a mock server for OpenFGA.
 
 ### CI container image
 
-@TODO: TBD
+The CI container image can be found under \_build/images/kong-tooling/Dockerfile. The image is based on the official Kong image and contains all the necessary tools to run the lint, unit and integration tests.
 
 ## Recommended Visual Studio Code extensions
 
@@ -301,7 +301,7 @@ The project bundles a mock server for OpenFGA.
 7. Commit the changes, create a tag and push changes and tag to the remote repository
    1. `git add plugin.properties *.rockspec README.md kong/plugins/*/handler.lua CHANGELOG.md`
    2. `git commit -m "Release x.y.z-r"`
-   3. `git tag x.y.z-r`
+   3. `git tag vx.y.z-r`
    4. `git push`
    5. `git push --tags`
 8. @TODO: Add step to perform a release in GitHub

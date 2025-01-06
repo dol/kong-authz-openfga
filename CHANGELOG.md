@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+### Deprecated
+
+### Security
+
+## [0.1.0-1] - 2025-01-06
+
+### Added
+
 - Initial implementation of plugin
 - Added GitHub action build for linting and unit testing
 - Added function to handle unexpected errors and exit the plugin
@@ -23,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extracted `kong.response.exit(500, "An unexpected error occurred")` to its own function
 - Extracted the code inside the `repeat ... until` loop into its own function
 - Modified `make_fga_request` to return a boolean indicating allow/deny
-- For local development, a kong-*dev-0.rockspec file is used to install the plugin. This helps segregate
+- For local development, a kong-\*dev-0.rockspec file is used to install the plugin. This helps segregate
   the testing from the release process.
 - Changed the rockspec license to MIT.
 
