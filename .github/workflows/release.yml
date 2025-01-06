@@ -17,15 +17,20 @@ jobs:
         run: |
           VERSION="$(make release-info | grep -oP '^VERSION=\K.*')"
           ROCKSPEC_RELEASE_FILE="$(make release-info | grep -oP '^ROCKSPEC_RELEASE_FILE=\K.*')"
+
           if [ ! -f "${ROCKSPEC_RELEASE_FILE}" ]; then
-            echo "No rockspec files found. Exiting."
+            echo "No ${ROCKSPEC_RELEASE_FILE} file found. Exiting."
             exit 1
           fi
-          # Compare tag with version with VERSIOn
-          if [ "${GITHUB_REF}" != "refs/tags/v${VERSION}" ]; then
-            echo "Tag does not match version. Exiting."
+          # Compare tag with version with VERSION
+          if [ "${{ github.ref_name }}" != "${VERSION}" ]; then
+            echo "${{ github.ref_name }} does not match version ${VERSION}. Exiting."
             exit 1
           fi
+      - uses: leafo/gh-actions-lua@v10
+      - uses: leafo/gh-actions-luarocks@v4
+      - name: Set up LuaRocks
+        run: luarocks install dkjson
       - name: Publish to LuaRocks
         env:
           LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
