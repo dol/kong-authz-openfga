@@ -7,19 +7,31 @@ services:
     host: 127.0.0.1
     port: 15555
     plugins:
+      - name: basic-auth
+        service: smoke-test-upstream
+        config:
+          hide_credentials: true
       - name: kong-authz-openfga
         config:
           host: kong-plugin-kong-authz-openfga-openfga
           store_id: 01JF958AHC0F7CT35GCFN4EHP6
           tuple:
-            user: user:anne
-            relation: reader
+            user_by_lua: return 'user:' .. kong.client.get_consumer().username
+            relation: writer
             object: repo:openfga/openfga
     routes:
       - name: smoke.test
         paths:
           - /
         protocols:
-          - https
-        snis:
-          - smoke.test
+          - http
+
+consumers:
+- username: anne
+  basicauth_credentials:
+  - username: anne
+    password: password
+- username: beth
+  basicauth_credentials:
+  - username: beth
+    password: password
