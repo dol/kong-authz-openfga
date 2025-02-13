@@ -269,11 +269,11 @@ service-postgres: container-network-ci
 	$(DOCKER) container inspect '$(CONTAINER_CI_POSTGRES_NAME)' > /dev/null 2>&1 || $(CONTAINER_CI_POSTGRES_RUN)
 
 .PHONY: service-openfga-migration
-service-openfga-migration:
+service-openfga-migration: container-network-ci
 	$(DOCKER) container inspect '$(CONTAINER_CI_OPENFGA_NAME)' > /dev/null 2>&1 || $(CONTAINER_CI_OPENFGA_MIGRATION)
 
 .PHONY: service-openfga-run
-service-openfga-run:
+service-openfga-run: container-network-ci
 	$(DOCKER) container inspect '$(CONTAINER_CI_OPENFGA_NAME)' > /dev/null 2>&1 || $(CONTAINER_CI_OPENFGA_RUN)
 
 .PHONY: service-openfga
