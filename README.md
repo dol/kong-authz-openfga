@@ -95,6 +95,48 @@ Below is the example configuration one might use in `declarative_config`:
 | `tuple`<br/>_required_<br/><br/>**Type:** record                            | -             | Tuple key for authorization                                                                                                                                                                                              |
 | `contextual_tuples`<br/>_optional_<br/><br/>**Type:** set                   | {}            | Set of contextual tuples for authorization                                                                                                                                                                               |
 
+## Tuple Definition
+
+The `Tuple key` is a structure used to define the relationship between a user, relation, and object. It supports both direct string values and Lua expressions that return a string. The Lua expressions run in the Kong Plugin Sandbox for security.
+
+### Fields
+
+- `user`: A string representing the user.
+- `user_by_lua`: A Lua expression that returns a string representing the user.
+- `relation`: A string representing the relation.
+- `relation_by_lua`: A Lua expression that returns a string representing the relation.
+- `object`: A string representing the object.
+- `object_by_lua`: A Lua expression that returns a string representing the object.
+
+### Entity Checks
+
+- Only one of `user` or `user_by_lua` must be provided.
+- At least one of `user` or `user_by_lua` must be provided.
+- Only one of `relation` or `relation_by_lua` must be provided.
+- At least one of `relation` or `relation_by_lua` must be provided.
+- Only one of `object` or `object_by_lua` must be provided.
+- At least one of `object` or `object_by_lua` must be provided.
+
+### Example
+
+Below is an example configuration using `Tuple key` in `declarative_config`:
+
+```yaml
+- name: kong-authz-openfga
+  config:
+    host: localhost
+    port: 1234
+    store_id: "your_store_id"
+    tuple:
+      user_by_lua: return 'user:' .. kong.client.get_consumer().username
+      relation: "can_view"
+      object: "transaction:A"
+    contextual_tuples:
+      - user_by_lua: return 'user:' .. kong.client.get_consumer().username
+        relation: "user"
+        object_by_lua: return 'ip:' .. kong.client.get_ip()
+```
+
 ## Plugin version
 
 Version: 0.1.0
