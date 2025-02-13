@@ -1,6 +1,6 @@
 # Kong plugin kong-authz-openfga
 
-The goal of this plugin is to integrate Kong with OpenFGA for fine-grained authorization. It allows you to define and enforce access control policies using OpenFGA.
+The goal of this plugin is to integrate Kong with [OpenFGA](https://openfga.dev/) for fine-grained authorization. It allows you to define and enforce access control policies using OpenFGA.
 
 ## Installation
 
@@ -314,7 +314,7 @@ The smoke test container emulates a Kong environment that installs a .rocks (Lua
 
 ### Mock service
 
-The project bundles a mock server for OpenFGA.
+The project bundles a mock server for [OpenFGA](https://hub.docker.com/r/openfga/openfga).
 
 #### Mock service in Lua
 
