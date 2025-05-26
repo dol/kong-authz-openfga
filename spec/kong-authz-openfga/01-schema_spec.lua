@@ -50,7 +50,6 @@ describe(PLUGIN_NAME .. ": (#schema)", function()
       failed_attempts_backoff_timeout = 1000,
       store_id = "store_id",
       model_id = "model_id",
-      api_token = "api_token",
       timeout = 1000,
       keepalive = 6000,
       tuple = {

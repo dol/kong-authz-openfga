@@ -56,12 +56,6 @@ Below is the example configuration one might use in `declarative_config`:
     keepalive: 60000
     store_id: "your_store_id"
     model_id: "your_model_id"
-    api_token: "your_api_token"
-    api_token_issuer: "your_api_token_issuer"
-    api_audience: "your_api_audience"
-    api_client_id: "your_api_client_id"
-    api_client_secret: "your_api_client_secret"
-    api_token_cache: 600
     tuple:
       user: "user_id"
       relation: "relation"
@@ -86,12 +80,6 @@ Below is the example configuration one might use in `declarative_config`:
 | `keepalive`<br/>_optional_<br/><br/>**Type:** number                        | 60000         | The maximal idle timeout in milliseconds for the current connection. See [tcpsock:setkeepalive](https://github.com/openresty/lua-nginx-module#tcpsocksetkeepalive) for more details.                                     |
 | `store_id`<br/>_required_<br/><br/>**Type:** string                         | -             | The store ID in OpenFGA                                                                                                                                                                                                  |
 | `model_id`<br/>_optional_<br/><br/>**Type:** string                         | -             | Optional model ID (version). Latest is used if this is empty                                                                                                                                                             |
-| `api_token`<br/>_optional_<br/><br/>**Type:** string                        | -             | Optional API token                                                                                                                                                                                                       |
-| `api_token_issuer`<br/>_optional_<br/><br/>**Type:** string                 | -             | API token issuer                                                                                                                                                                                                         |
-| `api_audience`<br/>_optional_<br/><br/>**Type:** string                     | -             | API audience                                                                                                                                                                                                             |
-| `api_client_id`<br/>_optional_<br/><br/>**Type:** string                    | -             | API client ID                                                                                                                                                                                                            |
-| `api_client_secret`<br/>_optional_<br/><br/>**Type:** string                | -             | API client secret                                                                                                                                                                                                        |
-| `api_token_cache`<br/>_optional_<br/><br/>**Type:** number                  | 600           | API token cache duration in seconds                                                                                                                                                                                      |
 | `tuple`<br/>_required_<br/><br/>**Type:** record                            | -             | Tuple key for authorization                                                                                                                                                                                              |
 | `contextual_tuples`<br/>_optional_<br/><br/>**Type:** set                   | {}            | Set of contextual tuples for authorization                                                                                                                                                                               |
 
