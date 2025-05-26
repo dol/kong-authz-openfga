@@ -50,12 +50,6 @@ local tuple_key = {
 ---@field failed_attempts_backoff_timeout integer
 ---@field store_id string
 ---@field model_id string
----@field api_token string
----@field api_token_issuer string
----@field api_audience string
----@field api_client_id string
----@field api_client_secret string
----@field api_token_cache number
 ---@field tuple TupleKey
 ---@field contextual_tuples TupleKey[]
 return {
@@ -83,19 +77,7 @@ return {
               type = "string",
             },
           },
-          {
-            api_token = {
-              description = "Optional API token",
-              type = "string",
-              referenceable = true,
-              encrypted = true,
-            },
-          },
-          { api_token_issuer = { type = "string" } },
-          { api_audience = { type = "string" } },
-          { api_client_id = { type = "string", referenceable = true, encrypted = true } },
-          { api_client_secret = { type = "string", referenceable = true, encrypted = true } },
-          { api_token_cache = { type = "number", default = 600 } },
+
           {
             tuple = tuple_key,
           },
@@ -104,16 +86,6 @@ return {
               type = "set",
               elements = tuple_key,
               default = {},
-            },
-          },
-        },
-        entity_checks = {
-          {
-            mutually_required = {
-              "api_token_issuer",
-              "api_audience",
-              "api_client_id",
-              "api_client_secret",
             },
           },
         },
