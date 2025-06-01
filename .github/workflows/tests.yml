@@ -54,7 +54,7 @@ jobs:
       - name: Wait for service to be ready
         run: |
           # Wait until kong is ready
-          timeout 60s bash -c 'until docker exec kong-plugin-kong-authz-openfga-smoke-test curl -i http://localhost:8007/status/ready; do sleep 5; done'
+          timeout 60s bash -c 'until docker exec kong-plugin-authz-openfga-smoke-test curl -i http://localhost:8007/status/ready; do sleep 5; done'
       - name: Run smoke tests
         run: |
           make smoke-test-run-test DOCKER_RUN_FLAGS_TTY=''

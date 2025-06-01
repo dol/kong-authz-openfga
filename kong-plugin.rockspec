@@ -1,4 +1,4 @@
-local plugin_name = "kong-authz-openfga"
+local plugin_name = "authz-openfga"
 local package_name = "kong-plugin-" .. plugin_name
 local package_namespace = "kong.plugins." .. plugin_name
 local package_path = "kong/plugins/" .. plugin_name

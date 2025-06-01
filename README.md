@@ -7,7 +7,7 @@ The goal of this plugin is to integrate Kong with [OpenFGA](https://openfga.dev/
 Install the plugin using `luarocks`.
 
 ```sh
-luarocks install kong-plugin-kong-authz-openfga
+luarocks install kong-plugin-authz-openfga
 ```
 
 ## Enable it in Kong

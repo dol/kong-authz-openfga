@@ -1,4 +1,4 @@
-package = "kong-plugin-kong-authz-openfga"
+package = "kong-plugin-authz-openfga"
 version = "0.1.0-2"
 source = {
    url = "git+https://github.com/dol/kong-authz-openfga.git",

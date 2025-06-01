@@ -9,7 +9,7 @@ services:
     plugins:
       - name: kong-authz-openfga
         config:
-          host: kong-plugin-kong-authz-openfga-openfga
+          host: kong-plugin-authz-openfga-openfga
           store_id: 01JF958AHC0F7CT35GCFN4EHP6
           tuple:
             user: user:anne
