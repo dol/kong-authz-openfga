@@ -14,7 +14,7 @@ WORKDIR /plugin
 COPY . .
 
 # Install from .rockspec
-RUN find && luarocks make ${KONG_PLUGIN_ROCKSPEC_FILE}
+RUN luarocks make ${KONG_PLUGIN_ROCKSPEC_FILE}
 
 FROM ${KONG_IMAGE_NAME}:${KONG_IMAGE_TAG}
 
