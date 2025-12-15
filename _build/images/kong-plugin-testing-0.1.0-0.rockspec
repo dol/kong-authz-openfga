@@ -17,6 +17,7 @@ dependencies = {
   "luacov-reporter-lcov = 0.2",
   "luacov-console = 1.1.0",
   "lua-llthreads2 = 0.1.6",
+  "lua-reqwest = 0.1.2",
   "http = 0.4",
 }
 

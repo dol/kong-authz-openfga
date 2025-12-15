@@ -30,3 +30,5 @@ COPY --from=builder /usr/local/lib/lua/5.1 /usr/local/lib/lua/5.1
 
 # Add the Luarocks manifest
 COPY --from=builder /usr/local/lib/luarocks/rocks-5.1 /usr/local/lib/luarocks/rocks-5.1
+
+USER kong

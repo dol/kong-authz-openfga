@@ -29,16 +29,18 @@ RUN dnf install -y cmake gcc m4 git --setopt=install_weak_deps=False \
   && cmake --build . --config Release \
   && unzip /tmp/stylua-linux-x86_64.zip -d /usr/local/bin \
   && cp /tmp/EmmyLuaDebugger-${EMMY_LUA_DEBUGGER_VERSION}/build/emmy_core/emmy_core.so /usr/local/lib/lua/5.1 \
-  && rm -rf /var/tmp/*
+  && rm -rf /var/tmp/* \
+  && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs/ | CARGO_HOME=/usr/local/cargo sh -s -- --profile minimal --no-modify-path --default-toolchain=1.92.0 -y
 
 COPY _build/images/kong-plugin-testing-0.1.0-0.rockspec /kong-plugin-testing-0.1.0-0.rockspec
 # Install package dependencies used for unit and integration tests.
-RUN luarocks build /kong-plugin-testing-0.1.0-0.rockspec --only-deps OPENSSL_DIR=/usr/local/kong CRYPTO_DIR=/usr/local/kong
+RUN PATH=/usr/local/cargo/bin:${PATH} OPENSSL_DIR=/usr/local/kong luarocks build /kong-plugin-testing-0.1.0-0.rockspec --only-deps OPENSSL_DIR=/usr/local/kong CRYPTO_DIR=/usr/local/kong
 
 COPY kong-plugin-${KONG_PLUGIN_NAME}-dev-0.rockspec /kong-plugin-${KONG_PLUGIN_NAME}-dev-0.rockspec
 # Install package dependencies defined in the plugin rockspec file.
 RUN luarocks build /kong-plugin-${KONG_PLUGIN_NAME}-dev-0.rockspec --only-deps OPENSSL_DIR=/usr/local/kong CRYPTO_DIR=/usr/local/kong
 
+# Tooling image - final stage
 FROM ${KONG_IMAGE_NAME}:${KONG_IMAGE_TAG}
 
 ENV LUA_PATH="/kong-plugin/?.lua;/kong-plugin/?/init.lua;;"
